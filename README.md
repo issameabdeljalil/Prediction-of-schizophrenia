@@ -1,144 +1,86 @@
-# Predict schizophrenia using brain anatomy
+# **Predicting Schizophrenia Using Brain Anatomy**
 
-Predict schizophrenia from brain grey matter (GM). schizophrenia is associated with diffuse and complex pattern of brain atrophy. We will try to learn a predictor of the clinical status (patient with schizophrenia vs. healthy control) using GM measurements on the brain participants.
+This project was carried out as part of an exam-project of Professor Edouard Duchesnay's Machine Learning material in the MoSEF Data Science Course of Paris 1 Panthéon Sorbonne. 
 
-## Dataset
+This project aims to classify individuals based on whether they have schizophrenia or not, using features extracted from brain anatomy. Schizophrenia is associated with complex and diffuse brain atrophy, and this work focuses on predicting the clinical status of patients (schizophrenia vs. healthy control) using grey matter measurements in the brain.
 
-There are 410 samples in the training set and 103 samples in the test set.
+The developed model classifies individuals based on the presence or absence of the disease, which could have important implications for early diagnosis of schizophrenia.
 
-### Input data
+## **Dataset**
 
-Voxel-based_morphometry [VBM](https://en.wikipedia.org/wiki/Voxel-based_morphometry)
-using [cat12](http://www.neuro.uni-jena.de/cat/) software which provides:
+### **Description**
+We have two types of data:
 
-- Regions Of Interest (`rois`) of Grey Matter (GM) scaled for the Total
-  Intracranial Volume (TIV): `[train|test]_rois.csv` 284 features.
+- **Training Set**: 410 samples
+- **Test Set**: 103 samples
 
-- VBM GM 3D maps or images (`vbm3d`) of [voxels](https://en.wikipedia.org/wiki/Voxel) in the
-  [MNI](https://en.wikipedia.org/wiki/Talairach_coordinates) space:
-  `[train|test]_vbm.npz` contains 3D images of shapes (121, 145, 121).
-  This npz contains the 3D mask and the affine transformation to MNI
-  referential. Masking the brain provide *flat* 331 695 input features (voxels)
-  for each participant.
+The data includes two types of features:
 
-By default `problem.get_[train|test]_data()` return the concatenation of 284 ROIs of
-Grey Matter (GM) features with 331 695 features (voxels) within a brain mask.
-Those two blocks are higly redundant.
-To select only on ROIs (`rois`) features do:
+1. **Regions of Interest (ROIs)**: Information on the grey matter of the brain (284 features).
+2. **VBM 3D Maps**: Three-dimensional representations of the brain's grey matter in MNI space (331,695 features).
 
-```
-X[:, :284]
-```
+### **Target**
+The target is a binary variable distinguishing healthy controls from schizophrenia patients.
 
-To select only on (`vbm`) (voxel with the brain) features do:
+## **Feature Selection**
 
-```
-X[:, 284:]
-```
+### **Dimensionality Reduction**
+Given the large number of features (over 330,000 variables), we decided to reduce the dimensionality to avoid overfitting and speed up model training. The first step is to keep only the ROIs, as their information is redundant with that of the VBM maps. Next, we perform a correlation analysis of the ROIs to remove highly correlated variables.
 
-### Target
+- For continuous variables, we analyzed normality using the Shapiro-Wilk, Kolmogorov-Smirnov, and Jarque-Bera tests. Variables were considered normal if all three tests agreed.
+- Pearson's correlation is used for normal variables, with a threshold of 0.9 to detect redundancy.
+- For non-normal continuous variables, we used Spearman's test and applied the same correlation threshold.
 
-The target can be found in `[test|train]_participants.csv` files, selecting the
-`age` column for regression problem.
+After this analysis, we reduced the number of features from 280 to 214, which is a significant reduction. Logistic regression was then used to select the most impactful features, reducing the number of features to 82.
 
-## Evaluation metrics
+## **Models**
 
-[sklearn metrics](https://scikit-learn.org/stable/modules/model_evaluation.html)
+### **Models Tested**
+We explored several non-linear models from different families of classification algorithms, including:
 
-The main Evaluation metrics is the Root-mean-square deviation
-[ROC-AUC](https://en.wikipedia.org/wiki/Receiver_operating_characteristic), the Area Under Curve of eceiver operating characteristic curve, or ROC curve
+- **Support Vector Machine Classifier (SVC)**
+- **Random Forest**
+- **Gradient Boosting**
+- **Multi-Layer Perceptron (MLP)**
 
-## Links
+### **Model Combination**
+The final model is based on a combination of the following models:
 
-- [RAMP studio](https://ramp.studio/)
-- [RAMP-workflow’s documentation](https://paris-saclay-cds.github.io/ramp-docs/ramp-workflow/)
-- [RAMP-workflow’s github](https://github.com/paris-saclay-cds/ramp-workflow)
-- [RAMP Kits](https://github.com/ramp-kits)
+- **Gradient Boosting**: This model captures complex relationships between features through an ensemble of decision trees.
+- **Multi-Layer Perceptron (MLP)**: MLP can model complex, non-linear relationships and also extract advanced representations of the data, which is particularly useful given the high number of features.
+- **Support Vector Classifier (SVC)**: The SVC is used to stabilize final predictions and help separate the schizophrenia and control classes.
 
-## Installation
+We chose a **Voting Classifier** to combine these models.
+
+### **Results**
+The final model achieved an AUC score of 0.85 and a Balanced Accuracy of 0.76. We tested our models with different sets of features (1000 features, the initial 284 features, and the 82 selected features) and observed the impact of feature selection on model performance. Including all features increases the risk of overfitting, and the model performs better on the training set and worse on the test set when all features are used, indicating that the model is overfitting and struggles to generalize.
+
+
+## Submission (Run locally)
+
+After cloning the repo, you should follow these instructions :
+
+### Installation
 
 This starting kit requires Python and the following dependencies:
 
-* `numpy`
-* `scipy`
-* `pandas`
-* `scikit-learn`
-* `matplolib`
-* `seaborn`
-* `jupyter`
-* `ramp-workflow`
+numpy
+scipy
+pandas
+scikit-learn
+matplolib
+seaborn
+jupyter
+ramp-workflow
 
-Therefore, we advise you to install [Anaconda
-distribution](https://www.anaconda.com/download/) which include almost all
-dependencies.
+To run a submission and the notebook you will need the dependencies listed in requirements.txt. You can install the dependencies with the following command-line:
 
-Only `nilearn` and `ramp-workflow` are not included by default in the Anaconda
-distribution. They will be installed from the execution of the notebook.
-
-To run a submission and the notebook you will need the dependencies listed in requirements.txt.
-You can install the dependencies with the following command-line:
-
-```
 pip install -U -r requirements.txt
-```
 
-If you are using conda, we provide an environment.yml file for similar usage.
-
-```
-conda env create -f environment.yml
-```
-
-Then, you can activate the environment using:
-
-```
-conda activate brain_anatomy_schizophrenia
-```
-
-Install optional packages, e.g.: `spyder`
-
-```
-conda install spyder
-```
-
-
-And desactivate using
-
-```
-conda deactivate
-```
-
-## Getting started
+### Getting started
 
 1. download the data locally:
-
-```
 python download_data.py
-```
-
-2. Execute the jupyter notebook, from the root directory using:
-
-```
-jupyter notebook brain_anatomy_schizophrenia_starting_kit.ipynb
-```
-
-Tune your model using the starting_kit
-
-3. Submission (Run locally)
-
-The submissions need to be located in the `submissions` folder.
-For instance for `starting_kit`, it should be located in
-`submissions/submissions/starting_kit`.
-
-Copy everything required to build your estimator in a submission file:
-`submissions/submissions/starting_kit/estimator.py`.
-This file must contain a function `get_estimator()`.
-
-Run locally:
-
-```
+2. Running the model locally:
 ramp-test --submission starting_kit
-```
 
-4. Submission on RAMP:
-
-[Using RAMP starting-kits](https://paris-saclay-cds.github.io/ramp-docs/ramp-workflow/stable/using_kits.html)
